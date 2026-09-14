@@ -1,0 +1,26 @@
+{
+  "name": "webhook-alert",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && cp dist/index.html dist/404.html",
+    "preview": "vite preview",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute webhook-alert --remote --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute webhook-alert --local --file=./schema.sql"
+  },
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.3.1",
+    "wrangler": "^3.60.0"
+  }
+}

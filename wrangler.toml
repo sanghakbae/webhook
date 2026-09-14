@@ -1,0 +1,19 @@
+name = "webhook-alert"
+main = "worker/index.js"
+compatibility_date = "2024-09-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "webhook-alert"
+database_id = "4e1aad23-f52c-4e57-bf1a-9612f2743d52"
+
+[vars]
+FIREBASE_PROJECT_ID = "webhook-alert-system"
+ALLOWED_EMAILS = "qa@muhayu.com,bae@sanghak.kr"
+ALLOWED_ORIGINS = "https://webhook.sanghak.kr,http://localhost:5173"
+MAIL_FROM = "웹훅 알림 <alerts@sanghak.kr>"
+EVENT_RETENTION_DAYS = "30"
+
+# 시크릿 (wrangler secret put 으로 설정)
+#   RESEND_API_KEY
