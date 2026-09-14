@@ -69,6 +69,38 @@ export default function Guide() {
       </div>
 
       <div className="panel">
+        <h2>앱으로 설치하기</h2>
+        <p>
+          홈 화면에 설치하면 브라우저 주소창 없이 앱처럼 열리고, 오프라인에서도 화면이 뜹니다.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>환경</th>
+              <th className="remark">설치 방법</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Android · Chrome</td>
+              <td className="remark">하단에 뜨는 <b>설치</b> 버튼, 또는 메뉴 ⋮ → 앱 설치</td>
+            </tr>
+            <tr>
+              <td>iPhone · Safari</td>
+              <td className="remark">공유 버튼 → <b>홈 화면에 추가</b> (Safari에서만 됩니다)</td>
+            </tr>
+            <tr>
+              <td>PC · Chrome/Edge</td>
+              <td className="remark">주소창 오른쪽 설치 아이콘, 또는 메뉴 → 앱 설치</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="muted">
+          새 버전이 배포되면 화면 아래에 알림이 뜹니다. <b>새로고침</b>을 눌러야 반영됩니다.
+        </p>
+      </div>
+
+      <div className="panel">
         <h2>알아둘 점</h2>
         <ul className="muted" style={{ lineHeight: 1.8, paddingLeft: 18 }}>
           <li>본문은 64KB까지 저장하고, 그보다 길면 잘립니다.</li>

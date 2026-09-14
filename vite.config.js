@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 조용히 갱신하면 사용자가 새 버전을 알 수 없다. 알리고 사용자가 누르면 갱신한다.
+      registerType: 'prompt',
+      injectRegister: null,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: '웹훅 알림 허브',

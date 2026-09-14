@@ -7,6 +7,7 @@ import Events from './pages/Events'
 import Rules from './pages/Rules'
 import Settings from './pages/Settings'
 import Guide from './pages/Guide'
+import PwaBar from './PwaBar'
 
 // 모바일 하단 탭은 6칸을 한 줄에 나눠 쓴다. 라벨이 접히면 안 되므로 짧은 이름을 따로 둔다.
 const NAV = [
@@ -56,6 +57,7 @@ export default function App() {
             Google로 로그인
           </button>
         </div>
+        <PwaBar />
       </div>
     )
 
@@ -100,6 +102,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <PwaBar />
     </div>
   )
 }
