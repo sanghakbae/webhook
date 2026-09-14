@@ -28,17 +28,22 @@ const json = (env, request, data, status = 200) =>
     headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders(env, request) },
   })
 
+// 성공하면 { user }, 실패하면 { error } — 401 원인을 화면에서 바로 알 수 있게 구분한다.
 async function requireUser(request, env) {
   const auth = request.headers.get('Authorization') || ''
-  if (!auth.startsWith('Bearer ')) return null
+  if (!auth.startsWith('Bearer ')) return { error: '로그인이 필요합니다' }
   const user = await verifyIdToken(auth.slice(7), env.FIREBASE_PROJECT_ID)
-  if (!user) return null
+  if (!user) return { error: '토큰 검증 실패 (만료됐거나 다른 Firebase 프로젝트의 토큰)' }
   const allow = (env.ALLOWED_EMAILS || '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
-  if (allow.length && !allow.includes(user.email)) return null
-  return user
+  if (allow.length && !allow.includes(user.email)) {
+    return {
+      error: `허용되지 않은 계정입니다: ${user.email} (허용: ${allow.join(', ')})`,
+    }
+  }
+  return { user }
 }
 
 // ---------------------------------------------------------------- 웹훅 수신
@@ -457,8 +462,8 @@ export default {
     }
 
     if (url.pathname.startsWith('/api/')) {
-      const user = await requireUser(request, env)
-      if (!user) return json(env, request, { error: '인증이 필요합니다' }, 401)
+      const { user, error } = await requireUser(request, env)
+      if (!user) return json(env, request, { error }, 401)
       try {
         return await api(request, env, url.pathname.slice(5), user)
       } catch (err) {

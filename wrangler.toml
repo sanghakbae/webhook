@@ -10,7 +10,7 @@ database_id = "4e1aad23-f52c-4e57-bf1a-9612f2743d52"
 
 [vars]
 FIREBASE_PROJECT_ID = "webhook-alert-system"
-ALLOWED_EMAILS = "qa@muhayu.com,bae@sanghak.kr"
+ALLOWED_EMAILS = "totoriverce@gmail.com,qa@muhayu.com,bae@sanghak.kr"
 ALLOWED_ORIGINS = "https://webhook.sanghak.kr,http://localhost:5173"
 MAIL_FROM = "웹훅 알림 <alerts@sanghak.kr>"
 EVENT_RETENTION_DAYS = "30"
