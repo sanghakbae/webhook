@@ -10,9 +10,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // prompt 로 두면 새 워커가 waiting 에 걸린 채 기존 워커가 옛 화면을 계속 내줘서
-      // 알림조차 뜨지 않는다. 갱신은 즉시 받되(autoUpdate), 반영됐다는 사실을 화면에 알린다.
-      registerType: 'autoUpdate',
+      // autoUpdate 는 제어권이 바뀌는 순간 클라이언트가 스스로 새로고침해버려 알림이 뜰 새가 없다.
+      // prompt 로 두어 새 워커를 대기시키고, 사용자가 누를 때 반영한다.
+      registerType: 'prompt',
       injectRegister: null,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
