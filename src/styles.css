@@ -22,8 +22,11 @@
 
 * { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
@@ -145,10 +148,18 @@ label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); 
   color: #c3cad6;
   padding: 9px 11px;
   border-radius: 8px;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   font-size: 13.5px;
+  white-space: nowrap;
   transition: background .12s, color .12s;
 }
+.nav-icon { font-size: 14px; line-height: 1; }
+.nav-label-short { display: none; }
+
+/* 모바일 전용 상단 바 — 하단 탭에는 계정/로그아웃 자리가 없다 */
+.topbar { display: none; }
 .side a:hover { background: #1f242e; color: #fff; text-decoration: none; }
 .side a.active { background: var(--accent); color: #fff; font-weight: 500; }
 .side .foot {
@@ -241,17 +252,96 @@ pre.payload {
 
 @media (max-width: 760px) {
   .shell { flex-direction: column; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    background: #14181f;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .topbar-brand {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar button {
+    flex: none;
+    background: #262c37;
+    border-color: #39414f;
+    color: #dfe4ec;
+  }
+  .topbar button:hover:not(:disabled) { background: #303845; border-color: #4a5464; }
+
+  /* 하단 탭 — 6칸을 화면 폭에 균등 분배해서 가로 스크롤이 생기지 않게 한다 */
   .side {
+    order: 2;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     flex-direction: row;
-    overflow-x: auto;
-    padding: 8px 10px;
-    gap: 4px;
-    align-items: center;
+    overflow: hidden;
+    gap: 0;
+    padding: 4px 2px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid #262c37;
+    z-index: 20;
   }
   .side .brand, .side .foot { display: none; }
-  .side a { white-space: nowrap; padding: 8px 12px; }
-  .main { padding: 18px 14px 56px; }
+  .side a {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 2px;
+    font-size: 10px;
+    line-height: 1.1;
+    text-align: center;
+    border-radius: 10px;
+  }
+  .side a.active { background: transparent; color: #8fa5ff; }
+  .side a:hover { background: transparent; }
+  .nav-icon { font-size: 17px; }
+  /* 라벨은 절대 접히지 않는다 */
+  .nav-label { display: none; }
+  .nav-label-short {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .main { padding: 16px 14px calc(78px + env(safe-area-inset-bottom)); }
   .main h1 { font-size: 19px; }
-  .panel { padding: 15px 14px; }
+  .panel { padding: 15px 14px; border-radius: 10px; }
+  .head { margin-bottom: 16px; }
+
+  /* 좁은 화면에서 한 줄에 억지로 두 칸씩 들어가 글자가 접히는 것을 막는다 */
+  .row > * { flex: 1 1 100%; }
+  .row > .field[style*="0 0 auto"] { flex: 1 1 100%; }
+  .row > .field[style*="0 0 auto"] button { width: 100%; }
+
+  th, td { padding: 9px 8px; white-space: nowrap; }
+  td.remark, th.remark { white-space: nowrap; }
+  .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat { padding: 13px 14px; }
+  .stat .n { font-size: 22px; }
+  .chip { white-space: nowrap; }
+  .login-card { padding: 32px 24px; }
+}
+
+/* 표는 패널 안에서만 가로로 스크롤된다 — 페이지 전체가 밀리지 않게 */
+@media (max-width: 760px) {
+  .panel { -webkit-overflow-scrolling: touch; }
 }

@@ -8,13 +8,14 @@ import Rules from './pages/Rules'
 import Settings from './pages/Settings'
 import Guide from './pages/Guide'
 
+// 모바일 하단 탭은 6칸을 한 줄에 나눠 쓴다. 라벨이 접히면 안 되므로 짧은 이름을 따로 둔다.
 const NAV = [
-  ['/', '📊 대시보드'],
-  ['/endpoints', '🔗 엔드포인트'],
-  ['/events', '📥 수신 로그'],
-  ['/rules', '🔔 알림 규칙'],
-  ['/settings', '⚙️ 설정'],
-  ['/guide', '📖 사용법'],
+  ['/', '📊', '대시보드', '대시보드'],
+  ['/endpoints', '🔗', '엔드포인트', '엔드포인트'],
+  ['/events', '📥', '수신 로그', '로그'],
+  ['/rules', '🔔', '알림 규칙', '규칙'],
+  ['/settings', '⚙️', '설정', '설정'],
+  ['/guide', '📖', '사용법', '사용법'],
 ]
 
 export default function App() {
@@ -60,11 +61,24 @@ export default function App() {
 
   return (
     <div className="shell">
+      <header className="topbar">
+        <span className="topbar-brand">🔔 웹훅 알림 허브</span>
+        <button className="sm" onClick={signOut}>
+          로그아웃
+        </button>
+      </header>
+
       <nav className="side">
-        <div className="brand">웹훅 알림 허브</div>
-        {NAV.map(([to, label]) => (
-          <NavLink key={to} to={to} end={to === '/'}>
-            {label}
+        <div className="brand">🔔 웹훅 알림 허브</div>
+        {NAV.map(([to, icon, label, short]) => (
+          <NavLink key={to} to={to} end={to === '/'} title={label}>
+            <span className="nav-icon" aria-hidden="true">
+              {icon}
+            </span>
+            <span className="nav-label">{label}</span>
+            <span className="nav-label-short" aria-hidden="true">
+              {short}
+            </span>
           </NavLink>
         ))}
         <div className="foot">
