@@ -8,7 +8,6 @@ const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 export default function PwaBar() {
   const [needRefresh, setNeedRefresh] = useState(false)
-  const [updateSW, setUpdateSW] = useState(null)
   const [installEvent, setInstallEvent] = useState(null)
   const [showIosHint, setShowIosHint] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
@@ -20,8 +19,7 @@ export default function PwaBar() {
   })
 
   useEffect(() => {
-    const fn = registerSW({ onNeedRefresh: () => setNeedRefresh(true) })
-    setUpdateSW(() => fn)
+    registerSW({ onNeedRefresh: () => setNeedRefresh(true) })
 
     // autoUpdate 는 새 워커가 곧바로 제어권을 가져간다. 그 순간을 잡아 알린다.
     // 최초 설치 때도 controllerchange 가 한 번 뜨므로, 이전 워커가 있었을 때만 알림.
@@ -57,20 +55,30 @@ export default function PwaBar() {
     } catch {}
   }
 
+  // 대기 중인 워커에 SKIP_WAITING 을 보내고, 제어권이 넘어온 뒤에 새로고침한다.
+  // 곧바로 reload 하면 교체가 끝나기 전에 페이지가 날아가 갱신이 안 된다.
+  const applyUpdate = async () => {
+    const reg = await navigator.serviceWorker?.getRegistration()
+    if (!reg?.waiting) {
+      window.location.reload()
+      return
+    }
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      () => window.location.reload(),
+      { once: true },
+    )
+    reg.waiting.postMessage({ type: 'SKIP_WAITING' })
+    // 교체 신호가 오지 않는 브라우저를 대비한 마지막 수단
+    setTimeout(() => window.location.reload(), 4000)
+  }
+
   if (needRefresh)
     return (
       <div className="pwa-bar">
         <span>새 버전이 준비됐습니다.</span>
         <div className="pwa-bar-actions">
-          <button
-            className="sm primary"
-            onClick={() => {
-              try {
-                updateSW?.(true)
-              } catch {}
-              window.location.reload()
-            }}
-          >
+          <button className="sm primary" onClick={applyUpdate}>
             새로고침
           </button>
           <button className="sm" onClick={() => setNeedRefresh(false)}>
