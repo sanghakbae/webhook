@@ -1,5 +1,5 @@
 import { verifyIdToken, verifySignature } from './auth.js'
-import { matchRule, renderTemplate, buildEmail } from './rules.js'
+import { matchRule, subjectOf, buildEmail } from './rules.js'
 import { sendMail } from './mail.js'
 
 const MAX_BODY = 64 * 1024
@@ -151,7 +151,7 @@ async function deliver(env, ctx, rules) {
     }
     const result = await sendMail(env, {
       to,
-      subject: renderTemplate(rule.subject_tpl, full),
+      subject: subjectOf(rule.subject_tpl, full),
       html,
       text,
     })
@@ -258,7 +258,11 @@ async function api(request, env, path, user) {
     }
     if (m === 'DELETE') {
       await env.DB.batch([
+        env.DB.prepare(
+          'DELETE FROM deliveries WHERE uid = ? AND event_id IN (SELECT id FROM events WHERE endpoint_id = ?)',
+        ).bind(user.uid, seg[1]),
         env.DB.prepare('DELETE FROM events WHERE endpoint_id = ? AND uid = ?').bind(seg[1], user.uid),
+        env.DB.prepare('DELETE FROM rules WHERE endpoint_id = ? AND uid = ?').bind(seg[1], user.uid),
         env.DB.prepare('DELETE FROM endpoints WHERE id = ? AND uid = ?').bind(seg[1], user.uid),
       ])
       return json(env, request, { ok: true })
@@ -275,8 +279,8 @@ async function api(request, env, path, user) {
 
   // --- events
   if (seg[0] === 'events' && seg.length === 1 && m === 'GET') {
-    const limit = Math.min(Number(url.searchParams.get('limit') || 50), 200)
-    const before = Number(url.searchParams.get('before') || 0) || now() + 1
+    const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
+    const before = Number(url.searchParams.get('before')) || now() + 1
     const epId = url.searchParams.get('endpoint') || ''
     const onlyMatched = url.searchParams.get('matched') === '1'
     const sql = `SELECT v.id, v.endpoint_id, v.method, v.content_type, v.source_ip, v.sig_ok, v.matched, v.received_at,
@@ -393,7 +397,8 @@ async function api(request, env, path, user) {
     if (!row) return json(env, request, { error: '없는 규칙' }, 404)
     if (m === 'PATCH') {
       const b = await request.json()
-      const merged = { ...row, ...b }
+      const given = Object.fromEntries(Object.entries(b).filter(([, v]) => v !== undefined))
+      const merged = { ...row, ...given }
       await env.DB.prepare(
         `UPDATE rules SET endpoint_id = ?, name = ?, enabled = ?, match_type = ?, field = ?, op = ?, value = ?,
                           recipients = ?, subject_tpl = ?, body_tpl = ?, throttle_s = ? WHERE id = ? AND uid = ?`,

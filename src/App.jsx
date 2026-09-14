@@ -41,12 +41,17 @@ export default function App() {
   if (!user)
     return (
       <div className="center">
-        <div>
+        <div className="login-card">
+          <div style={{ fontSize: 34, marginBottom: 10 }}>🔔</div>
           <h1>웹훅 알림 허브</h1>
-          <p className="muted" style={{ marginBottom: 20 }}>
+          <p className="muted" style={{ marginBottom: 24 }}>
             웹훅을 받아 조건에 맞으면 메일로 알려줍니다.
           </p>
-          <button className="primary" onClick={() => signIn().catch((e) => alert(e.message))}>
+          <button
+            className="primary"
+            style={{ width: '100%', padding: '10px 16px' }}
+            onClick={() => signIn().catch((e) => alert(e.message))}
+          >
             Google로 로그인
           </button>
         </div>
@@ -65,7 +70,7 @@ export default function App() {
         <div className="foot">
           {user.email}
           <br />
-          <button style={{ marginTop: 8 }} onClick={signOut}>
+          <button className="sm" style={{ marginTop: 10 }} onClick={signOut}>
             로그아웃
           </button>
         </div>

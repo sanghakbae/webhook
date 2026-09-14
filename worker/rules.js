@@ -71,6 +71,11 @@ export function renderTemplate(tpl, ctx) {
   return out.trim() || `[웹훅] ${ctx.endpoint.name}`
 }
 
+// 제목은 메일 헤더로 들어간다. 줄바꿈이 섞이면 헤더가 오염되므로 한 줄로 눌러 담는다.
+export function subjectOf(tpl, ctx) {
+  return renderTemplate(tpl, ctx).replace(/[\r\n\t]+/g, ' ').slice(0, 200)
+}
+
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 

@@ -74,7 +74,10 @@ export default function Rules() {
     }
   }
 
-  const epName = (id) => endpoints.find((e) => e.id === id)?.name || '전체'
+  const epName = (id) => {
+    if (!id) return '전체'
+    return endpoints.find((e) => e.id === id)?.name || '(삭제된 엔드포인트)'
+  }
 
   return (
     <>
@@ -268,10 +271,11 @@ export default function Rules() {
                     </span>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    <button onClick={() => act(() => api.updateRule(r.id, { enabled: !r.enabled }))}>
+                    <button className="sm" onClick={() => act(() => api.updateRule(r.id, { enabled: !r.enabled }))}>
                       {r.enabled ? '끄기' : '켜기'}
                     </button>{' '}
                     <button
+                      className="sm"
                       onClick={() => {
                         setEditId(r.id)
                         setForm({
@@ -291,7 +295,7 @@ export default function Rules() {
                       수정
                     </button>{' '}
                     <button
-                      className="danger"
+                      className="danger sm"
                       onClick={() => {
                         if (confirm(`"${r.name}" 규칙을 삭제할까요?`)) act(() => api.deleteRule(r.id))
                       }}

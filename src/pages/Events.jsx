@@ -140,6 +140,11 @@ function EventDetail({ detail, onClose, onError }) {
     pretty = JSON.stringify(JSON.parse(detail.body), null, 2)
   } catch {}
 
+  let headers = detail.headers
+  try {
+    headers = JSON.stringify(JSON.parse(detail.headers || '{}'), null, 2)
+  } catch {}
+
   return (
     <div className="panel">
       <div className="head" style={{ marginBottom: 10 }}>
@@ -174,7 +179,7 @@ function EventDetail({ detail, onClose, onError }) {
       <div className="field">
         <label>헤더</label>
         <pre className="payload" style={{ maxHeight: 220 }}>
-          {JSON.stringify(JSON.parse(detail.headers || '{}'), null, 2)}
+          {headers}
         </pre>
       </div>
 
