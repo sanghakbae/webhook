@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS rules (
   value       TEXT,
   recipients  TEXT NOT NULL,    -- 콤마 구분 이메일
   subject_tpl TEXT,             -- {{endpoint}} {{event}} 등 치환
+  body_tpl    TEXT,             -- 메일 본문. 비우면 페이로드 원문을 싣는다
   throttle_s  INTEGER NOT NULL DEFAULT 0,
   last_fired  INTEGER NOT NULL DEFAULT 0,
   created_at  INTEGER NOT NULL

@@ -10,6 +10,7 @@ const EMPTY = {
   op: 'eq',
   value: '',
   subject_tpl: '[웹훅] {{endpoint}}',
+  body_tpl: '',
   throttle_s: 0,
   enabled: true,
 }
@@ -193,6 +194,17 @@ export default function Rules() {
             />
           </div>
         </div>
+        <div className="field">
+          <label>본문 템플릿 (비우면 받은 데이터 원문을 그대로 싣습니다)</label>
+          <textarea
+            rows={4}
+            className="mono"
+            value={form.body_tpl}
+            onChange={(e) => setForm({ ...form, body_tpl: e.target.value })}
+            placeholder={'{{title}}\n\n{{text}}'}
+          />
+        </div>
+
         <p className="muted" style={{ marginTop: 0 }}>
           알림은 <b>{mailTo || '설정된 주소'}</b> 로만 발송됩니다. 바꾸려면 Worker의 <code>MAIL_TO</code>
           변수를 수정하세요. 제목에 <code>{'{{endpoint}}'}</code>, <code>{'{{rule}}'}</code>, <code>{'{{time}}'}</code> 과
@@ -229,6 +241,7 @@ export default function Rules() {
                 <th>이름</th>
                 <th>대상</th>
                 <th>조건</th>
+                <th>본문</th>
                 <th>간격</th>
                 <th>상태</th>
                 <th></th>
@@ -246,6 +259,7 @@ export default function Rules() {
                         ? `본문 ⊃ "${r.value}"`
                         : `${r.field} ${r.op} ${r.op === 'exists' ? '' : r.value}`}
                   </td>
+                  <td className="muted">{r.body_tpl ? '템플릿' : '원문'}</td>
                   <td className="muted">{r.throttle_s ? `${r.throttle_s}s` : '–'}</td>
                   <td>
                     <span className={'chip ' + (r.enabled ? 'ok' : '')}>
@@ -267,6 +281,7 @@ export default function Rules() {
                           op: r.op || 'eq',
                           value: r.value ?? '',
                           subject_tpl: r.subject_tpl || '',
+                          body_tpl: r.body_tpl || '',
                           enabled: !!r.enabled,
                         })
                         window.scrollTo({ top: 0, behavior: 'smooth' })

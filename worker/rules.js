@@ -60,22 +60,34 @@ const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 
 export function buildEmail(ctx) {
+  const meta = [
+    ['엔드포인트', ctx.endpoint.name],
+    ['수신 시각', new Date(ctx.receivedAt).toLocaleString('ko-KR')],
+  ]
+
+  // 본문 템플릿이 있으면 그것만 싣는다. 원문이 필요하면 대시보드의 수신 로그에 남아 있다.
+  const rendered = ctx.rule?.body_tpl ? renderTemplate(ctx.rule.body_tpl, ctx) : ''
+  if (rendered) return compose(rendered, meta, ctx)
+
   const pretty = ctx.json ? JSON.stringify(ctx.json, null, 2) : ctx.rawBody || '(본문 없음)'
   const clipped = pretty.length > 20000 ? pretty.slice(0, 20000) + '\n… (생략)' : pretty
-  const rows = [
-    ['엔드포인트', ctx.endpoint.name],
+  meta.push(
     ['규칙', ctx.rule?.name ?? '-'],
-    ['수신 시각', new Date(ctx.receivedAt).toLocaleString('ko-KR')],
     ['메서드', ctx.method],
     ['Content-Type', ctx.contentType || '-'],
     ['출처 IP', ctx.sourceIp || '-'],
     ['서명 검증', ctx.sigOk === null ? '미사용' : ctx.sigOk ? '통과' : '실패'],
-  ]
-  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:680px;margin:0 auto;color:#0f172a">
-  <h2 style="margin:0 0 4px;font-size:18px">웹훅 수신 알림</h2>
-  <p style="margin:0 0 16px;color:#64748b;font-size:13px">${esc(ctx.endpoint.name)} 엔드포인트로 요청이 도착했습니다.</p>
+  )
+  return compose(clipped, meta, ctx, true)
+}
+
+function compose(body, meta, ctx, raw = false) {
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo',sans-serif;max-width:680px;margin:0 auto;color:#0f172a">
+  ${
+    raw
+      ? `<h2 style="margin:0 0 12px;font-size:18px">웹훅 수신 알림</h2>
   <table style="border-collapse:collapse;width:100%;font-size:13px;margin-bottom:16px">
-    ${rows
+    ${meta
       .map(
         ([k, v]) =>
           `<tr><td style="padding:6px 10px;background:#f1f5f9;border:1px solid #e2e8f0;width:130px;color:#475569">${esc(k)}</td><td style="padding:6px 10px;border:1px solid #e2e8f0">${esc(v)}</td></tr>`,
@@ -83,9 +95,12 @@ export function buildEmail(ctx) {
       .join('')}
   </table>
   <div style="font-size:12px;color:#475569;margin-bottom:6px">페이로드</div>
-  <pre style="background:#0f172a;color:#e2e8f0;padding:14px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-all">${esc(clipped)}</pre>
-  ${ctx.dashboardUrl ? `<p style="font-size:12px"><a href="${esc(ctx.dashboardUrl)}" style="color:#2563eb">대시보드에서 보기</a></p>` : ''}
+  <pre style="background:#0f172a;color:#e2e8f0;padding:14px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-all">${esc(body)}</pre>`
+      : `<div style="font-size:15px;line-height:1.7;white-space:pre-wrap">${esc(body)}</div>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0 10px">
+  <div style="font-size:12px;color:#64748b">${meta.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>`
+  }
 </div>`
-  const text = rows.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\n' + clipped
+  const text = raw ? meta.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\n' + body : body
   return { html, text }
 }
