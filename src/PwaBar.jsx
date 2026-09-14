@@ -19,7 +19,13 @@ export default function PwaBar() {
   })
 
   useEffect(() => {
-    registerSW({ onNeedRefresh: () => setNeedRefresh(true) })
+    registerSW({
+      onNeedRefresh: () => setNeedRefresh(true),
+      // 설치형으로 오래 열어두면 새 버전을 눈치채지 못한다. 한 시간마다 확인한다.
+      onRegisteredSW: (_url, reg) => {
+        if (reg) setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000)
+      },
+    })
 
     // autoUpdate 는 새 워커가 곧바로 제어권을 가져간다. 그 순간을 잡아 알린다.
     // 최초 설치 때도 controllerchange 가 한 번 뜨므로, 이전 워커가 있었을 때만 알림.
