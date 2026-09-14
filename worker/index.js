@@ -137,17 +137,28 @@ async function recordEvent(env, ep, request, body, headers, sigOk, matched, rece
 
 async function deliver(env, ctx, rules) {
   for (const rule of rules) {
+    // 한 규칙에서 터진 예외가 나머지 규칙 발송까지 막으면 안 된다.
+    try {
+      await deliverOne(env, ctx, rule)
+    } catch (err) {
+      await logDelivery(env, ctx, rule, 'failed', String(err?.message || err), '').catch(() => {})
+    }
+  }
+}
+
+async function deliverOne(env, ctx, rule) {
+  {
     const t = now()
     if (rule.throttle_s > 0 && t - rule.last_fired < rule.throttle_s * 1000) {
       await logDelivery(env, ctx, rule, 'throttled', `${rule.throttle_s}초 제한`, recipientsOf(env).join(', '))
-      continue
+      return
     }
     const full = { ...ctx, rule }
     const { html, text } = buildEmail(full)
     const to = recipientsOf(env)
     if (!to.length) {
       await logDelivery(env, ctx, rule, 'failed', 'MAIL_TO 미설정', '')
-      continue
+      return
     }
     const result = await sendMail(env, {
       to,
@@ -183,7 +194,7 @@ async function cleanup(env) {
   const t = now()
   if (t - lastCleanup < 3600_000) return
   lastCleanup = t
-  const days = Number(env.EVENT_RETENTION_DAYS || 30)
+  const days = Number(env.EVENT_RETENTION_DAYS) || 30
   const cutoff = t - days * 86400_000
   await env.DB.prepare('DELETE FROM events WHERE received_at < ?').bind(cutoff).run()
   await env.DB.prepare('DELETE FROM deliveries WHERE created_at < ?').bind(cutoff).run()
@@ -281,16 +292,21 @@ async function api(request, env, path, user) {
   if (seg[0] === 'events' && seg.length === 1 && m === 'GET') {
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
     const before = Number(url.searchParams.get('before')) || now() + 1
+    // id 는 16진수라 'z' 가 항상 크다 — 커서가 없을 때의 상한으로 쓴다.
+    const beforeId = url.searchParams.get('before_id') || 'z'
     const epId = url.searchParams.get('endpoint') || ''
     const onlyMatched = url.searchParams.get('matched') === '1'
     const sql = `SELECT v.id, v.endpoint_id, v.method, v.content_type, v.source_ip, v.sig_ok, v.matched, v.received_at,
                         substr(v.body, 1, 300) AS preview, e.name AS endpoint_name
                  FROM events v JOIN endpoints e ON e.id = v.endpoint_id
-                 WHERE v.uid = ? AND v.received_at < ?
+                 WHERE v.uid = ?
+                   AND (v.received_at < ? OR (v.received_at = ? AND v.id < ?))
                    ${epId ? 'AND v.endpoint_id = ?' : ''}
                    ${onlyMatched ? 'AND v.matched > 0' : ''}
-                 ORDER BY v.received_at DESC LIMIT ?`
-    const binds = epId ? [user.uid, before, epId, limit] : [user.uid, before, limit]
+                 ORDER BY v.received_at DESC, v.id DESC LIMIT ?`
+    const binds = epId
+      ? [user.uid, before, before, beforeId, epId, limit]
+      : [user.uid, before, before, beforeId, limit]
     const rows = await env.DB.prepare(sql).bind(...binds).all()
     return json(env, request, { items: rows.results || [] })
   }
@@ -317,6 +333,7 @@ async function api(request, env, path, user) {
       .first()
     if (!ev) return json(env, request, { error: '없는 이벤트' }, 404)
     const ep = await env.DB.prepare('SELECT * FROM endpoints WHERE id = ?').bind(ev.endpoint_id).first()
+    if (!ep) return json(env, request, { error: '엔드포인트가 삭제된 이벤트입니다' }, 404)
     const { rule_id } = await request.json().catch(() => ({}))
     const rules = rule_id
       ? [await env.DB.prepare('SELECT * FROM rules WHERE id = ? AND uid = ?').bind(rule_id, user.uid).first()]
@@ -327,27 +344,30 @@ async function api(request, env, path, user) {
             .bind(user.uid, ev.endpoint_id)
             .all()
         ).results
-    const valid = (rules || []).filter(Boolean)
-    if (!valid.length) return json(env, request, { error: '보낼 규칙이 없습니다' }, 400)
     let parsed = null
     try {
       parsed = JSON.parse(ev.body)
     } catch {}
-    await deliver(
-      env,
-      {
-        endpoint: ep,
-        json: parsed,
-        rawBody: ev.body,
-        method: ev.method,
-        contentType: ev.content_type,
-        sourceIp: ev.source_ip,
-        sigOk: ev.sig_ok,
-        receivedAt: ev.received_at,
-        eventId: ev.id,
-      },
-      valid.map((r) => ({ ...r, throttle_s: 0 })),
-    )
+    const replayCtx = {
+      endpoint: ep,
+      json: parsed,
+      rawBody: ev.body,
+      method: ev.method,
+      contentType: ev.content_type,
+      sourceIp: ev.source_ip,
+      sigOk: ev.sig_ok,
+      receivedAt: ev.received_at,
+      eventId: ev.id,
+    }
+    // 규칙을 지정하지 않았다면, 애초에 이 이벤트에 걸렸을 규칙만 다시 보낸다.
+    // 조건에 맞지도 않고 꺼져 있는 규칙까지 발송하던 문제.
+    const valid = (rules || [])
+      .filter(Boolean)
+      .filter((r) => (rule_id ? true : matchRule(r, replayCtx)))
+    if (!valid.length) {
+      return json(env, request, { error: '이 이벤트에 해당하는 규칙이 없습니다' }, 400)
+    }
+    await deliver(env, replayCtx, valid.map((r) => ({ ...r, throttle_s: 0 })))
     return json(env, request, { ok: true, count: valid.length })
   }
 
@@ -382,7 +402,7 @@ async function api(request, env, path, user) {
           recipients,
           b.subject_tpl || null,
           b.body_tpl || null,
-          Number(b.throttle_s || 0),
+          Math.max(0, Number(b.throttle_s) || 0),
           now(),
         )
         .run()
@@ -414,7 +434,7 @@ async function api(request, env, path, user) {
           env.MAIL_TO || merged.recipients,
           merged.subject_tpl || null,
           merged.body_tpl || null,
-          Number(merged.throttle_s || 0),
+          Math.max(0, Number(merged.throttle_s) || 0),
           seg[1],
           user.uid,
         )

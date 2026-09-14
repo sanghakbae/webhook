@@ -28,9 +28,10 @@ export function matchRule(rule, ctx) {
     if (ctx.json == null) return false
     const actual = getPath(ctx.json, rule.field)
     const expected = rule.value
+    if (rule.op === 'exists') return actual !== undefined
+    // 필드 자체가 없으면 비교가 성립하지 않는다. 특히 ne 는 무관한 페이로드에도 걸렸다.
+    if (actual === undefined) return false
     switch (rule.op) {
-      case 'exists':
-        return actual !== undefined
       case 'eq':
         return String(actual) === String(expected)
       case 'ne':
@@ -89,6 +90,7 @@ export function buildEmail(ctx) {
     ['출처 IP', ctx.sourceIp || '-'],
     ['서명 검증', ctx.sigOk === null ? '미사용' : ctx.sigOk ? '통과' : '실패'],
   ]
+  if (ctx.truncated) meta.push(['본문', '64KB 초과분이 잘렸습니다'])
 
   // 본문 템플릿이 있으면 읽을 수 있는 내용을, 없으면 페이로드 원문을 싣는다.
   const rendered = ctx.rule?.body_tpl ? renderTemplate(ctx.rule.body_tpl, ctx) : ''

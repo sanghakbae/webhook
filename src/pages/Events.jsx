@@ -15,12 +15,12 @@ export default function Events() {
     api.listEndpoints().then((r) => setEndpoints(r.items)).catch(setError)
   }, [])
 
-  const load = (before) => {
+  const load = (cursor) => {
     setLoading(true)
     api
-      .listEvents({ ...filter, before, limit: 50 })
+      .listEvents({ ...filter, ...cursor, limit: 50 })
       .then((r) => {
-        setItems((prev) => (before ? [...prev, ...r.items] : r.items))
+        setItems((prev) => (cursor ? [...prev, ...r.items] : r.items))
         setDone(r.items.length < 50)
       })
       .catch(setError)
@@ -119,7 +119,15 @@ export default function Events() {
         )}
         {!done && items.length > 0 && (
           <div style={{ textAlign: 'center', marginTop: 12 }}>
-            <button disabled={loading} onClick={() => load(items[items.length - 1].received_at)}>
+            <button
+              disabled={loading}
+              onClick={() =>
+                load({
+                  before: items[items.length - 1].received_at,
+                  before_id: items[items.length - 1].id,
+                })
+              }
+            >
               {loading ? '불러오는 중…' : '더 보기'}
             </button>
           </div>
