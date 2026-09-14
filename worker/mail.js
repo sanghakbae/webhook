@@ -1,7 +1,26 @@
 // 메일 발송. Resend 키가 있으면 Resend, 없으면 Cloudflare Email Sending 바인딩을 쓴다.
+//
+// 마지막 관문: MAIL_TO 에 없는 주소는 여기서 버린다. 호출부가 어떤 실수를 하든
+// 지정된 주소 외로는 한 통도 나가지 않는다.
 export async function sendMail(env, { to, subject, html, text }) {
-  if (env.RESEND_API_KEY) return sendViaResend(env, { to, subject, html, text })
-  if (env.EMAIL) return sendViaCloudflare(env, { to, subject, html, text })
+  const allowed = (env.MAIL_TO || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  const list = (Array.isArray(to) ? to : [to])
+    .map((s) => String(s || '').trim())
+    .filter(Boolean)
+  const blocked = list.filter((addr) => !allowed.includes(addr.toLowerCase()))
+  const safe = list.filter((addr) => allowed.includes(addr.toLowerCase()))
+
+  if (!allowed.length) return { ok: false, detail: 'MAIL_TO 미설정 — 발송하지 않음' }
+  if (!safe.length) {
+    return { ok: false, detail: `허용되지 않은 수신 주소: ${blocked.join(', ') || '(없음)'}` }
+  }
+
+  const payload = { to: safe, subject, html, text }
+  if (env.RESEND_API_KEY) return sendViaResend(env, payload)
+  if (env.EMAIL) return sendViaCloudflare(env, payload)
   return { ok: false, detail: 'RESEND_API_KEY 미설정, EMAIL 바인딩도 없음' }
 }
 
