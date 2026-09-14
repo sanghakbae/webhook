@@ -134,33 +134,39 @@ async function deliver(env, ctx, rules) {
   for (const rule of rules) {
     const t = now()
     if (rule.throttle_s > 0 && t - rule.last_fired < rule.throttle_s * 1000) {
-      await logDelivery(env, ctx, rule, 'throttled', `${rule.throttle_s}초 제한`)
+      await logDelivery(env, ctx, rule, 'throttled', `${rule.throttle_s}초 제한`, recipientsOf(env, rule).join(', '))
       continue
     }
     const full = { ...ctx, rule }
     const { html, text } = buildEmail(full)
-    const to = rule.recipients
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
+    const to = recipientsOf(env, rule)
     const result = await sendMail(env, {
       to,
       subject: renderTemplate(rule.subject_tpl, full),
       html,
       text,
     })
-    await logDelivery(env, ctx, rule, result.ok ? 'sent' : 'failed', result.detail)
+    await logDelivery(env, ctx, rule, result.ok ? 'sent' : 'failed', result.detail, to.join(', '))
     if (result.ok) {
       await env.DB.prepare('UPDATE rules SET last_fired = ? WHERE id = ?').bind(t, rule.id).run()
     }
   }
 }
 
-function logDelivery(env, ctx, rule, status, detail) {
+// MAIL_TO 가 정해져 있으면 그것만 쓴다. 규칙의 recipients 는 기록용으로만 남는다.
+function recipientsOf(env, rule) {
+  const source = env.MAIL_TO || rule.recipients || ''
+  return source
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function logDelivery(env, ctx, rule, status, detail, recipients) {
   return env.DB.prepare(
     'INSERT INTO deliveries (id, uid, event_id, rule_id, recipients, status, detail, created_at) VALUES (?,?,?,?,?,?,?,?)',
   )
-    .bind(uid(), ctx.endpoint.uid, ctx.eventId, rule.id, rule.recipients, status, detail || '', now())
+    .bind(uid(), ctx.endpoint.uid, ctx.eventId, rule.id, recipients, status, detail || '', now())
     .run()
 }
 
@@ -329,7 +335,9 @@ async function api(request, env, path, user) {
     }
     if (m === 'POST') {
       const b = await request.json()
-      if (!b.name || !b.recipients) return json(env, request, { error: '이름과 수신자는 필수' }, 400)
+      if (!b.name) return json(env, request, { error: '이름은 필수입니다' }, 400)
+      const recipients = env.MAIL_TO || b.recipients
+      if (!recipients) return json(env, request, { error: '수신자가 설정되지 않았습니다' }, 400)
       const id = uid()
       await env.DB.prepare(
         `INSERT INTO rules (id, uid, endpoint_id, name, enabled, match_type, field, op, value, recipients, subject_tpl, throttle_s, last_fired, created_at)
@@ -345,7 +353,7 @@ async function api(request, env, path, user) {
           b.field || null,
           b.op || null,
           b.value ?? null,
-          b.recipients,
+          recipients,
           b.subject_tpl || null,
           Number(b.throttle_s || 0),
           now(),
@@ -375,7 +383,7 @@ async function api(request, env, path, user) {
           merged.field || null,
           merged.op || null,
           merged.value ?? null,
-          merged.recipients,
+          env.MAIL_TO || merged.recipients,
           merged.subject_tpl || null,
           Number(merged.throttle_s || 0),
           seg[1],
@@ -431,14 +439,15 @@ async function api(request, env, path, user) {
     })
   }
 
+  // --- 화면이 고정 수신 주소를 표시하기 위한 설정 조회
+  if (seg[0] === 'config' && m === 'GET') {
+    return json(env, request, { mail_to: env.MAIL_TO || '', mail_from: env.MAIL_FROM || '' })
+  }
+
   // --- 테스트 메일
   if (seg[0] === 'test-email' && m === 'POST') {
-    const { to } = await request.json()
     const result = await sendMail(env, {
-      to: String(to || user.email)
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
+      to: recipientsOf(env, { recipients: user.email }),
       subject: '[웹훅 알림] 테스트 메일',
       html: '<p>메일 발송 설정이 정상입니다. 🎉</p>',
       text: '메일 발송 설정이 정상입니다.',

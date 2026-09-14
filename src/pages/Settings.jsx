@@ -1,19 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, WORKER_BASE } from '../api'
 import { ErrorBox } from '../components/Bits'
 
 export default function Settings({ user }) {
-  const [to, setTo] = useState('bae@sanghak.kr')
+  const [cfg, setCfg] = useState({ mail_to: '', mail_from: '' })
   const [msg, setMsg] = useState('')
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    api.config().then(setCfg).catch(setError)
+  }, [])
 
   async function test() {
     setBusy(true)
     setMsg('')
     setError(null)
     try {
-      const r = await api.testEmail(to)
+      const r = await api.testEmail()
       setMsg(`발송 완료${r.detail ? ` (id: ${r.detail})` : ''}. 받은편지함을 확인하세요.`)
     } catch (e) {
       setError(e)
@@ -37,8 +41,8 @@ export default function Settings({ user }) {
         <h2>테스트 메일</h2>
         <div className="row">
           <div className="field">
-            <label>받는 주소 (콤마로 여러 개)</label>
-            <input value={to} onChange={(e) => setTo(e.target.value)} />
+            <label>받는 주소 (고정)</label>
+            <input className="mono" value={cfg.mail_to} readOnly />
           </div>
           <div className="field" style={{ flex: '0 0 auto' }}>
             <button className="primary" disabled={busy} onClick={test}>
@@ -47,8 +51,7 @@ export default function Settings({ user }) {
           </div>
         </div>
         <p className="muted">
-          실패하면 Worker에 <code>RESEND_API_KEY</code> 시크릿이 설정됐는지, <code>MAIL_FROM</code> 도메인이
-          Resend에 인증됐는지 확인하세요.
+          이 시스템의 모든 알림은 위 주소로만 발송됩니다. 규칙마다 다른 주소를 지정할 수 없습니다.
         </p>
       </div>
 
@@ -65,14 +68,22 @@ export default function Settings({ user }) {
               <td className="mono">{WORKER_BASE || '(같은 오리진 · 로컬 개발)'}</td>
             </tr>
             <tr>
+              <td>발신 주소</td>
+              <td className="mono">{cfg.mail_from || '-'}</td>
+            </tr>
+            <tr>
+              <td>수신 주소 (고정)</td>
+              <td className="mono">{cfg.mail_to || '-'}</td>
+            </tr>
+            <tr>
               <td>Firebase 프로젝트</td>
               <td className="mono">{import.meta.env.VITE_FIREBASE_PROJECT_ID || '-'}</td>
             </tr>
           </tbody>
         </table>
         <p className="muted">
-          접근 허용 계정과 보관 기간은 Worker의 <code>ALLOWED_EMAILS</code>,{' '}
-          <code>EVENT_RETENTION_DAYS</code> 변수로 관리합니다.
+          접근 허용 계정·수신 주소·보관 기간은 Worker의 <code>ALLOWED_EMAILS</code>,{' '}
+          <code>MAIL_TO</code>, <code>EVENT_RETENTION_DAYS</code> 변수로 관리합니다.
         </p>
       </div>
     </>

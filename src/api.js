@@ -29,6 +29,7 @@ export const ingestUrl = (token) =>
   `${WORKER_BASE || window.location.origin}/w/${token}`
 
 export const api = {
+  config: () => call('/config'),
   stats: () => call('/stats'),
   listEndpoints: () => call('/endpoints'),
   createEndpoint: (body) => call('/endpoints', { method: 'POST', body }),
@@ -48,7 +49,7 @@ export const api = {
   updateRule: (id, body) => call(`/rules/${id}`, { method: 'PATCH', body }),
   deleteRule: (id) => call(`/rules/${id}`, { method: 'DELETE' }),
   listDeliveries: () => call('/deliveries'),
-  testEmail: (to) => call('/test-email', { method: 'POST', body: { to } }),
+  testEmail: () => call('/test-email', { method: 'POST', body: {} }),
 }
 
 export const fmtTime = (ms) =>

@@ -9,7 +9,6 @@ const EMPTY = {
   field: '',
   op: 'eq',
   value: '',
-  recipients: 'bae@sanghak.kr',
   subject_tpl: '[웹훅] {{endpoint}}',
   throttle_s: 0,
   enabled: true,
@@ -27,16 +26,18 @@ const OPS = [
 export default function Rules() {
   const [items, setItems] = useState([])
   const [endpoints, setEndpoints] = useState([])
+  const [mailTo, setMailTo] = useState('')
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
 
   const load = () =>
-    Promise.all([api.listRules(), api.listEndpoints()])
-      .then(([r, e]) => {
+    Promise.all([api.listRules(), api.listEndpoints(), api.config()])
+      .then(([r, e, c]) => {
         setItems(r.items)
         setEndpoints(e.items)
+        setMailTo(c.mail_to)
       })
       .catch(setError)
 
@@ -170,13 +171,8 @@ export default function Rules() {
 
         <div className="row">
           <div className="field">
-            <label>수신 메일 (콤마로 여러 개) *</label>
-            <input
-              value={form.recipients}
-              onChange={(e) => setForm({ ...form, recipients: e.target.value })}
-              placeholder="bae@sanghak.kr"
-              required
-            />
+            <label>수신 메일</label>
+            <input className="mono" value={mailTo} readOnly title="시스템 전역 설정으로 고정된 주소입니다" />
           </div>
           <div className="field">
             <label>제목 템플릿</label>
@@ -198,7 +194,8 @@ export default function Rules() {
           </div>
         </div>
         <p className="muted" style={{ marginTop: 0 }}>
-          제목에 <code>{'{{endpoint}}'}</code>, <code>{'{{rule}}'}</code>, <code>{'{{time}}'}</code> 과
+          알림은 <b>{mailTo || '설정된 주소'}</b> 로만 발송됩니다. 바꾸려면 Worker의 <code>MAIL_TO</code>
+          변수를 수정하세요. 제목에 <code>{'{{endpoint}}'}</code>, <code>{'{{rule}}'}</code>, <code>{'{{time}}'}</code> 과
           JSON 필드 경로(<code>{'{{repository.name}}'}</code>)를 쓸 수 있습니다. 최소 간격은 같은 규칙이
           연달아 터질 때 메일 폭탄을 막아줍니다.
         </p>
@@ -232,7 +229,6 @@ export default function Rules() {
                 <th>이름</th>
                 <th>대상</th>
                 <th>조건</th>
-                <th>수신자</th>
                 <th>간격</th>
                 <th>상태</th>
                 <th></th>
@@ -250,7 +246,6 @@ export default function Rules() {
                         ? `본문 ⊃ "${r.value}"`
                         : `${r.field} ${r.op} ${r.op === 'exists' ? '' : r.value}`}
                   </td>
-                  <td className="muted">{r.recipients}</td>
                   <td className="muted">{r.throttle_s ? `${r.throttle_s}s` : '–'}</td>
                   <td>
                     <span className={'chip ' + (r.enabled ? 'ok' : '')}>
@@ -266,6 +261,7 @@ export default function Rules() {
                         setEditId(r.id)
                         setForm({
                           ...r,
+                          recipients: undefined,
                           endpoint_id: r.endpoint_id || '',
                           field: r.field || '',
                           op: r.op || 'eq',

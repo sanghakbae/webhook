@@ -18,6 +18,8 @@ FIREBASE_PROJECT_ID = "webhook-alert-system"
 ALLOWED_EMAILS = "totoriverce@gmail.com,qa@muhayu.com,bae@sanghak.kr"
 ALLOWED_ORIGINS = "https://webhook.sanghak.kr,http://localhost:5173"
 MAIL_FROM = "웹훅 알림 <alerts@sanghak.kr>"
+# 모든 알림이 가는 유일한 주소. 규칙에 무엇이 적혀 있든 여기로만 보낸다.
+MAIL_TO = "bae@sanghak.kr"
 EVENT_RETENTION_DAYS = "30"
 
 # 시크릿 (wrangler secret put 으로 설정)
