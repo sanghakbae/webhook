@@ -96,7 +96,7 @@ export default function Guide() {
           </tbody>
         </table>
         <p className="muted">
-          새 버전이 배포되면 화면 아래에 알림이 뜹니다. <b>새로고침</b>을 눌러야 반영됩니다.
+          새 버전이 배포되면 화면 아래에 알림이 뜹니다. <b>새로고침</b>을 누르면 바로 반영됩니다.
         </p>
       </div>
 

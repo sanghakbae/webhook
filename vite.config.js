@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // 조용히 갱신하면 사용자가 새 버전을 알 수 없다. 알리고 사용자가 누르면 갱신한다.
-      registerType: 'prompt',
+      // prompt 로 두면 새 워커가 waiting 에 걸린 채 기존 워커가 옛 화면을 계속 내줘서
+      // 알림조차 뜨지 않는다. 갱신은 즉시 받되(autoUpdate), 반영됐다는 사실을 화면에 알린다.
+      registerType: 'autoUpdate',
       injectRegister: null,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {

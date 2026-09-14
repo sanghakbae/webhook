@@ -20,10 +20,18 @@ export default function PwaBar() {
   })
 
   useEffect(() => {
-    const fn = registerSW({
-      onNeedRefresh: () => setNeedRefresh(true),
-    })
+    const fn = registerSW({ onNeedRefresh: () => setNeedRefresh(true) })
     setUpdateSW(() => fn)
+
+    // autoUpdate 는 새 워커가 곧바로 제어권을 가져간다. 그 순간을 잡아 알린다.
+    // 최초 설치 때도 controllerchange 가 한 번 뜨므로, 이전 워커가 있었을 때만 알림.
+    if (!('serviceWorker' in navigator)) return
+    const hadController = !!navigator.serviceWorker.controller
+    const onChange = () => {
+      if (hadController) setNeedRefresh(true)
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', onChange)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange)
   }, [])
 
   useEffect(() => {
@@ -52,9 +60,17 @@ export default function PwaBar() {
   if (needRefresh)
     return (
       <div className="pwa-bar">
-        <span>새 버전이 나왔습니다.</span>
+        <span>새 버전이 준비됐습니다.</span>
         <div className="pwa-bar-actions">
-          <button className="sm primary" onClick={() => updateSW?.(true)}>
+          <button
+            className="sm primary"
+            onClick={() => {
+              try {
+                updateSW?.(true)
+              } catch {}
+              window.location.reload()
+            }}
+          >
             새로고침
           </button>
           <button className="sm" onClick={() => setNeedRefresh(false)}>
