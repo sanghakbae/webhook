@@ -2,7 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// 배포 시각을 화면에 노출해 "지금 보고 있는 게 최신인가" 를 눈으로 확인할 수 있게 한다.
+const BUILD_TIME = new Date().toISOString()
+
 export default defineConfig({
+  define: { __BUILD_TIME__: JSON.stringify(BUILD_TIME) },
   plugins: [
     react(),
     VitePWA({

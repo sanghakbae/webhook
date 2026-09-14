@@ -79,6 +79,12 @@ export default function Settings({ user }) {
               <td>Firebase 프로젝트</td>
               <td className="mono">{import.meta.env.VITE_FIREBASE_PROJECT_ID || '-'}</td>
             </tr>
+            <tr>
+              <td>빌드 시각</td>
+              <td className="mono">
+                {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+              </td>
+            </tr>
           </tbody>
         </table>
         <p className="muted">
