@@ -33,10 +33,6 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 전환용 1회: 기존 autoUpdate 워커에 붙잡힌 클라이언트를 새 번들로 넘긴다.
-        // 다음 배포에서 제거해야 알림이 정상 동작한다.
-        skipWaiting: true,
-        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // API 와 웹훅 수신 경로는 절대 캐시하지 않는다.
         navigateFallbackDenylist: [/^\/api/, /^\/w\//],
