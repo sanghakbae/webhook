@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { signIn, signOut, watchAuth } from './firebase'
+import { configMissing, signIn, signOut, watchAuth } from './firebase'
 import Dashboard from './pages/Dashboard'
 import Endpoints from './pages/Endpoints'
 import Events from './pages/Events'
@@ -21,6 +21,20 @@ export default function App() {
   const [user, setUser] = useState(undefined)
 
   useEffect(() => watchAuth(setUser), [])
+
+  if (configMissing.length)
+    return (
+      <div className="center">
+        <div style={{ maxWidth: 460, textAlign: 'left' }}>
+          <h1>설정이 빠졌습니다</h1>
+          <p className="muted">
+            빌드에 아래 환경변수가 들어가지 않아 로그인을 초기화할 수 없습니다. GitHub 저장소의
+            Secrets/Variables를 확인하고 배포 워크플로를 다시 실행하세요.
+          </p>
+          <pre className="payload">{configMissing.join('\n')}</pre>
+        </div>
+      </div>
+    )
 
   if (user === undefined) return <div className="center">불러오는 중…</div>
 
