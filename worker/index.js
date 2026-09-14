@@ -3,6 +3,11 @@ import { matchRule, renderTemplate, buildEmail } from './rules.js'
 import { sendMail } from './mail.js'
 
 const MAX_BODY = 64 * 1024
+
+// 엔드포인트를 만들면 규칙도 같이 만든다. 규칙이 없으면 수신만 되고 메일이 안 나가서,
+// 매번 사람이 두 번 만들어야 했다. 페이로드 모양을 모르니 흔한 필드 이름을 후보로 넣는다.
+const DEFAULT_SUBJECT_TPL = '[{{endpoint}}] {{title|subject|post_title|event|time}}'
+const DEFAULT_BODY_TPL = '{{text|message|body|content|description}}'
 const uid = () => crypto.randomUUID().replace(/-/g, '')
 const now = () => Date.now()
 
@@ -206,11 +211,25 @@ async function api(request, env, path, user) {
       const b = await request.json()
       if (!b.name) return json(env, request, { error: '이름은 필수입니다' }, 400)
       const id = uid()
-      await env.DB.prepare(
-        'INSERT INTO endpoints (id, uid, name, token, secret, sig_header, paused, created_at) VALUES (?,?,?,?,?,?,0,?)',
-      )
-        .bind(id, user.uid, b.name, uid() + uid(), b.secret || null, b.sig_header || null, now())
-        .run()
+      const t = now()
+      await env.DB.batch([
+        env.DB.prepare(
+          'INSERT INTO endpoints (id, uid, name, token, secret, sig_header, paused, created_at) VALUES (?,?,?,?,?,?,0,?)',
+        ).bind(id, user.uid, b.name, uid() + uid(), b.secret || null, b.sig_header || null, t),
+        env.DB.prepare(
+          `INSERT INTO rules (id, uid, endpoint_id, name, enabled, match_type, field, op, value, recipients, subject_tpl, body_tpl, throttle_s, last_fired, created_at)
+           VALUES (?,?,?,?,1,'always',NULL,NULL,NULL,?,?,?,0,0,?)`,
+        ).bind(
+          uid(),
+          user.uid,
+          id,
+          `${b.name} 알림`,
+          env.MAIL_TO || '',
+          DEFAULT_SUBJECT_TPL,
+          DEFAULT_BODY_TPL,
+          t,
+        ),
+      ])
       const row = await env.DB.prepare('SELECT * FROM endpoints WHERE id = ?').bind(id).first()
       return json(env, request, row, 201)
     }

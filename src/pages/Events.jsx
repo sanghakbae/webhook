@@ -90,7 +90,7 @@ export default function Events() {
                 <th>메서드</th>
                 <th>서명</th>
                 <th>알림</th>
-                <th>본문 미리보기</th>
+                <th className="remark">본문 미리보기</th>
               </tr>
             </thead>
             <tbody>
@@ -109,7 +109,7 @@ export default function Events() {
                     )}
                   </td>
                   <td>{e.matched > 0 ? <span className="chip ok">{e.matched}</span> : '–'}</td>
-                  <td className="mono muted" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <td className="remark mono muted" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {e.preview}
                   </td>
                 </tr>
@@ -194,7 +194,7 @@ function EventDetail({ detail, onClose, onError }) {
                       {d.status}
                     </span>
                   </td>
-                  <td className="muted">{d.detail}</td>
+                  <td className="remark muted">{d.detail}</td>
                 </tr>
               ))}
             </tbody>

@@ -91,7 +91,7 @@ export default function Dashboard() {
                 <th>시각</th>
                 <th>수신자</th>
                 <th>상태</th>
-                <th>비고</th>
+                <th className="remark">비고</th>
               </tr>
             </thead>
             <tbody>
@@ -108,7 +108,7 @@ export default function Dashboard() {
                       {d.status === 'sent' ? '발송' : d.status === 'failed' ? '실패' : '제한'}
                     </span>
                   </td>
-                  <td className="muted">{d.detail}</td>
+                  <td className="remark muted">{d.detail}</td>
                 </tr>
               ))}
             </tbody>

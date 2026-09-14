@@ -201,11 +201,12 @@ export default function Rules() {
             className="mono"
             value={form.body_tpl}
             onChange={(e) => setForm({ ...form, body_tpl: e.target.value })}
-            placeholder={'{{title}}\n\n{{text}}'}
+            placeholder={'{{text|message|body}}'}
           />
         </div>
 
         <p className="muted" style={{ marginTop: 0 }}>
+          <code>{'{{a|b|c}}'}</code> 처럼 후보를 나열하면 페이로드에 있는 첫 번째 필드를 씁니다.
           알림은 <b>{mailTo || '설정된 주소'}</b> 로만 발송됩니다. 바꾸려면 Worker의 <code>MAIL_TO</code>
           변수를 수정하세요. 제목에 <code>{'{{endpoint}}'}</code>, <code>{'{{rule}}'}</code>, <code>{'{{time}}'}</code> 과
           JSON 필드 경로(<code>{'{{repository.name}}'}</code>)를 쓸 수 있습니다. 최소 간격은 같은 규칙이
@@ -240,7 +241,7 @@ export default function Rules() {
               <tr>
                 <th>이름</th>
                 <th>대상</th>
-                <th>조건</th>
+                <th className="remark">조건</th>
                 <th>본문</th>
                 <th>간격</th>
                 <th>상태</th>
@@ -252,7 +253,7 @@ export default function Rules() {
                 <tr key={r.id}>
                   <td>{r.name}</td>
                   <td>{epName(r.endpoint_id)}</td>
-                  <td className="mono muted">
+                  <td className="remark mono muted">
                     {r.match_type === 'always'
                       ? '항상'
                       : r.match_type === 'contains'

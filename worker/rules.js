@@ -48,16 +48,26 @@ export function matchRule(rule, ctx) {
   return false
 }
 
+function resolveKey(key, ctx) {
+  if (key === 'endpoint') return ctx.endpoint.name
+  if (key === 'rule') return ctx.rule?.name ?? ''
+  if (key === 'time') return KST(ctx.receivedAt)
+  const v = getPath(ctx.json ?? {}, key)
+  if (v === undefined || v === null) return ''
+  return typeof v === 'object' ? JSON.stringify(v) : String(v)
+}
+
+// {{a|b|c}} — 페이로드마다 필드 이름이 달라서, 있는 것 중 첫 번째를 쓴다.
 export function renderTemplate(tpl, ctx) {
   const base = tpl || '[웹훅] {{endpoint}}'
-  const out = base.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
-    if (key === 'endpoint') return ctx.endpoint.name
-    if (key === 'rule') return ctx.rule?.name ?? ''
-    if (key === 'time') return KST(ctx.receivedAt)
-    const v = getPath(ctx.json ?? {}, key)
-    return v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)
+  const out = base.replace(/\{\{\s*([\w.|\s]+?)\s*\}\}/g, (_, expr) => {
+    for (const key of expr.split('|').map((k) => k.trim()).filter(Boolean)) {
+      const v = resolveKey(key, ctx)
+      if (v !== '') return v
+    }
+    return ''
   })
-  // 참조한 필드가 페이로드에 없으면 제목이 통째로 비어버린다. 그때는 엔드포인트 이름으로 대체.
+  // 참조한 필드가 하나도 없으면 제목이 통째로 비어버린다. 그때는 엔드포인트 이름으로 대체.
   return out.trim() || `[웹훅] ${ctx.endpoint.name}`
 }
 
