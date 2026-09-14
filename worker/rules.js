@@ -45,13 +45,15 @@ export function matchRule(rule, ctx) {
 
 export function renderTemplate(tpl, ctx) {
   const base = tpl || '[웹훅] {{endpoint}}'
-  return base.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
+  const out = base.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
     if (key === 'endpoint') return ctx.endpoint.name
     if (key === 'rule') return ctx.rule?.name ?? ''
     if (key === 'time') return new Date(ctx.receivedAt).toLocaleString('ko-KR')
     const v = getPath(ctx.json ?? {}, key)
     return v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)
   })
+  // 참조한 필드가 페이로드에 없으면 제목이 통째로 비어버린다. 그때는 엔드포인트 이름으로 대체.
+  return out.trim() || `[웹훅] ${ctx.endpoint.name}`
 }
 
 const esc = (s) =>
