@@ -443,7 +443,13 @@ async function api(request, env, path, user) {
       html: '<p>메일 발송 설정이 정상입니다. 🎉</p>',
       text: '메일 발송 설정이 정상입니다.',
     })
-    return json(env, request, result, result.ok ? 200 : 502)
+    // 실패 사유를 error 로도 담아야 화면이 "요청 실패 (502)" 대신 원인을 보여준다.
+    return json(
+      env,
+      request,
+      result.ok ? result : { ...result, error: result.detail },
+      result.ok ? 200 : 502,
+    )
   }
 
   return json(env, request, { error: 'not found' }, 404)

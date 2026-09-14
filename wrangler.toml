@@ -8,6 +8,11 @@ binding = "DB"
 database_name = "webhook-alert"
 database_id = "4e1aad23-f52c-4e57-bf1a-9612f2743d52"
 
+# 메일 발송 대체 경로. RESEND_API_KEY 가 없으면 이 바인딩으로 보낸다.
+# 수신 주소가 Cloudflare Email Routing 에 인증돼 있어야 한다.
+[[send_email]]
+name = "EMAIL"
+
 [vars]
 FIREBASE_PROJECT_ID = "webhook-alert-system"
 ALLOWED_EMAILS = "totoriverce@gmail.com,qa@muhayu.com,bae@sanghak.kr"
